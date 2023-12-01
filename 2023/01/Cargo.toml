@@ -1,0 +1,16 @@
+[package]
+name = "aoc-2023-01"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+publish = { workspace = true }
+
+[features]
+p2 = ["regex"]
+
+[dependencies.regex]
+version = "1.10.2"
+optional = true
+
+[lints]
+workspace = true

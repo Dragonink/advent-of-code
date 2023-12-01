@@ -1,0 +1,73 @@
+[workspace]
+members = [
+	"2023/*",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+authors = ["Dragonink <Dragonink@users.noreply.github.com>"]
+edition = "2021"
+publish = false
+
+[workspace.lints.rust]
+# Correctness
+pointer_structural_match = "deny"
+# Restriction
+keyword_idents = "deny"
+missing_abi = "deny"
+missing_copy_implementations = "warn"
+missing_debug_implementations = "warn"
+non_ascii_idents = "deny"
+unreachable_pub = "warn"
+unsafe_code = "forbid"
+unsafe_op_in_unsafe_fn = "deny"
+unused = "warn"
+unused_crate_dependencies = "warn"
+unused_lifetimes = "warn"
+unused_must_use = "deny"
+unused_tuple_struct_fields = "warn"
+# Suspicious
+meta_variable_misuse = "warn"
+# Style
+unused_import_braces = "warn"
+unused_qualifications = "warn"
+[workspace.lints.clippy]
+# Restriction
+dbg_macro = "warn"
+empty_structs_with_brackets = "warn"
+enum_glob_use = "warn"
+exit = "deny"
+float_cmp_const = "warn"
+format_push_string = "warn"
+lossy_float_literal = "deny"
+match_on_vec_items = "warn"
+mem_forget = "warn"
+mod_module_files = "warn"
+option_option = "warn"
+rest_pat_in_fully_bound_structs = "warn"
+str_to_string = "warn"
+undocumented_unsafe_blocks = "forbid"
+verbose_file_reads = "warn"
+# Pedantic
+doc_link_with_quotes = "warn"
+doc_markdown = "warn"
+filter_map_next = "warn"
+flat_map_option = "warn"
+float_cmp = "warn"
+inefficient_to_string = "warn"
+macro_use_imports = "warn"
+manual_let_else = "warn"
+map_unwrap_or = "warn"
+match_wildcard_for_single_variants = "warn"
+needless_continue = "warn"
+semicolon_if_nothing_returned = "warn"
+unnested_or_patterns = "warn"
+unused_self = "warn"
+# Nursery
+empty_line_after_doc_comments = "warn"
+empty_line_after_outer_attr = "warn"
+imprecise_flops = "warn"
+missing_const_for_fn = "warn"
+readonly_write_lock = "warn"
+suboptimal_flops = "warn"
