@@ -1,16 +1,15 @@
 [package]
-name = "aoc-2023-01"
+name = "aoc-2023-03"
 version = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
 publish = { workspace = true }
 
 [features]
-p2 = ["regex"]
+p2 = []
 
-[dependencies.regex]
-workspace = true
-optional = true
+[dependencies]
+regex = { workspace = true }
 
 [lints]
 workspace = true

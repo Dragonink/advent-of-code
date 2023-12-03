@@ -10,6 +10,9 @@ authors = ["Dragonink <Dragonink@users.noreply.github.com>"]
 edition = "2021"
 publish = false
 
+[workspace.dependencies]
+regex = "^1.10.2"
+
 [workspace.lints.rust]
 # Correctness
 pointer_structural_match = "deny"

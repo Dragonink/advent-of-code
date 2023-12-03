@@ -1,3 +1,4 @@
 *.txt
+!**/src/*.txt
 
 /target/
