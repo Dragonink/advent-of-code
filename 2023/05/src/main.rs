@@ -1,4 +1,4 @@
-#[cfg(feature = "p2")]
+#[cfg(feature = "p2-brute")]
 use rayon::prelude::*;
 use std::{
 	collections::HashMap,
@@ -7,6 +7,15 @@ use std::{
 	ops::Range,
 	str::FromStr,
 };
+
+#[cfg(feature = "p2")]
+fn inter_diff(a: Range<usize>, b: Range<usize>) -> (Range<usize>, Range<usize>, Range<usize>) {
+	let inter = a.start.max(b.start)..a.end.min(b.end);
+	let diff_before = a.start..a.end.min(inter.start);
+	let diff_after = a.start.max(inter.end)..a.end;
+
+	(diff_before, inter, diff_after)
+}
 
 #[derive(Default, Clone, PartialEq, Eq)]
 struct Map(HashMap<Range<usize>, Range<usize>>);
@@ -46,14 +55,38 @@ impl FromStr for Map {
 	}
 }
 impl Map {
-	fn get(&self, value: usize) -> usize {
+	#[cfg(not(feature = "p2"))]
+	fn map(&self, value: usize) -> usize {
 		self.0
 			.iter()
 			.find_map(|(src, dest)| {
 				#[allow(clippy::unnecessary_lazy_evaluations)]
-				src.contains(&value).then(|| dest.start + value - src.start)
+				src.contains(&value).then(|| value + dest.start - src.start)
 			})
 			.unwrap_or(value)
+	}
+
+	#[cfg(feature = "p2")]
+	fn map(&self, range: Range<usize>) -> Vec<Range<usize>> {
+		self.0
+			.iter()
+			.find_map(|(src, dest)| {
+				let (diff_before, inter, diff_after) = inter_diff(range.clone(), src.clone());
+				(!inter.is_empty()).then(|| {
+					let mut mapped = vec![
+						(inter.start + dest.start - src.start)
+							..(inter.end + dest.start - src.start),
+					];
+					if !diff_before.is_empty() {
+						mapped.extend_from_slice(&self.map(diff_before));
+					}
+					if !diff_after.is_empty() {
+						mapped.extend_from_slice(&self.map(diff_after));
+					}
+					mapped
+				})
+			})
+			.unwrap_or_else(|| vec![range])
 	}
 }
 impl Debug for Map {
@@ -65,9 +98,9 @@ impl Debug for Map {
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 struct Parameters {
-	#[cfg(not(feature = "p2"))]
+	#[cfg(not(any(feature = "p2-brute", feature = "p2")))]
 	seeds: Vec<usize>,
-	#[cfg(feature = "p2")]
+	#[cfg(any(feature = "p2-brute", feature = "p2"))]
 	seeds: Vec<Range<usize>>,
 	seed_soil: Map,
 	soil_fertilizer: Map,
@@ -82,7 +115,7 @@ impl FromStr for Parameters {
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		let mut lines = s.lines();
-		#[cfg(not(feature = "p2"))]
+		#[cfg(not(any(feature = "p2-brute", feature = "p2")))]
 		let seeds: Vec<usize> = lines
 			.next()
 			.ok_or("missing seeds")?
@@ -90,7 +123,7 @@ impl FromStr for Parameters {
 			.skip(1)
 			.map(|s| s.parse().map_err(|_err| "could not parse the seed"))
 			.collect::<Result<_, _>>()?;
-		#[cfg(feature = "p2")]
+		#[cfg(any(feature = "p2-brute", feature = "p2"))]
 		let seeds = {
 			let mut seeds = Vec::new();
 			let mut values = lines
@@ -137,15 +170,15 @@ impl FromStr for Parameters {
 	}
 }
 impl Parameters {
-	#[cfg(not(feature = "p2"))]
+	#[cfg(not(any(feature = "p2-brute", feature = "p2")))]
 	fn seed_location(&self) -> impl '_ + Iterator<Item = usize> {
 		self.seeds.iter().copied().map(|seed| {
-			self.humidity_location.get(
-				self.temperature_humidity.get(
-					self.light_temperature.get(
-						self.water_light.get(
+			self.humidity_location.map(
+				self.temperature_humidity.map(
+					self.light_temperature.map(
+						self.water_light.map(
 							self.fertilizer_water
-								.get(self.soil_fertilizer.get(self.seed_soil.get(seed))),
+								.map(self.soil_fertilizer.map(self.seed_soil.map(seed))),
 						),
 					),
 				),
@@ -153,20 +186,36 @@ impl Parameters {
 		})
 	}
 
-	#[cfg(feature = "p2")]
+	#[cfg(all(feature = "p2-brute", not(feature = "p2")))]
 	fn seed_location(&self) -> impl '_ + ParallelIterator<Item = usize> {
 		self.seeds.par_iter().cloned().flatten().map(|seed| {
-			self.humidity_location.get(
-				self.temperature_humidity.get(
-					self.light_temperature.get(
-						self.water_light.get(
+			self.humidity_location.map(
+				self.temperature_humidity.map(
+					self.light_temperature.map(
+						self.water_light.map(
 							self.fertilizer_water
-								.get(self.soil_fertilizer.get(self.seed_soil.get(seed))),
+								.map(self.soil_fertilizer.map(self.seed_soil.map(seed))),
 						),
 					),
 				),
 			)
 		})
+	}
+
+	#[cfg(all(not(feature = "p2-brute"), feature = "p2"))]
+	fn seed_location(&self) -> Range<usize> {
+		self.seeds
+			.iter()
+			.cloned()
+			.flat_map(|range| self.seed_soil.map(range))
+			.flat_map(|range| self.soil_fertilizer.map(range))
+			.flat_map(|range| self.fertilizer_water.map(range))
+			.flat_map(|range| self.water_light.map(range))
+			.flat_map(|range| self.light_temperature.map(range))
+			.flat_map(|range| self.temperature_humidity.map(range))
+			.flat_map(|range| self.humidity_location.map(range))
+			.min_by_key(|range| range.start)
+			.unwrap()
 	}
 }
 
@@ -186,13 +235,44 @@ fn main() {
 mod tests {
 	use super::*;
 
+	#[cfg(feature = "p2")]
+	#[test]
+	fn inter_diff() {
+		const B: Range<usize> = 10..20;
+
+		let disjoint_before = super::inter_diff(0..5, B);
+		assert_eq!(disjoint_before.0, 0..5);
+		assert!(disjoint_before.1.is_empty());
+		assert!(disjoint_before.2.is_empty());
+		let disjoint_after = super::inter_diff(25..30, B);
+		assert!(disjoint_after.0.is_empty());
+		assert!(disjoint_after.1.is_empty());
+		assert_eq!(disjoint_after.2, 25..30);
+		let before = super::inter_diff(5..15, B);
+		assert_eq!(before.0, 5..10);
+		assert_eq!(before.1, 10..15);
+		assert!(before.2.is_empty());
+		let in_b = super::inter_diff(12..18, B);
+		assert!(in_b.0.is_empty());
+		assert_eq!(in_b.1, 12..18);
+		assert!(in_b.2.is_empty());
+		let after = super::inter_diff(15..25, B);
+		assert!(after.0.is_empty());
+		assert_eq!(after.1, 15..20);
+		assert_eq!(after.2, 20..25);
+		let b_included = super::inter_diff(5..25, B);
+		assert_eq!(b_included.0, 5..10);
+		assert_eq!(b_included.1, 10..20);
+		assert_eq!(b_included.2, 20..25);
+	}
+
 	macro_rules! map {
-        ($( $dest:literal $src:literal $len:literal ),* $(,)?) => {
-            Map(HashMap::from([
+		($( $dest:literal $src:literal $len:literal ),* $(,)?) => {
+			Map(HashMap::from([
 				$( ($src..($src + $len), $dest..($dest + $len)) ),*
 			]))
-        };
-    }
+		};
+	}
 
 	#[test]
 	fn map_from_str() {
@@ -251,22 +331,23 @@ mod tests {
 		);
 	}
 
+	#[cfg(not(feature = "p2"))]
 	#[test]
-	fn map_get() {
+	fn map_map() {
 		let map = map![
 			50 98 2,
 			52 50 48,
 		];
 
 		for i in 0..50 {
-			assert_eq!(map.get(i), i);
+			assert_eq!(map.map(i), i);
 		}
 		for j in 0..48 {
-			assert_eq!(map.get(50 + j), 52 + j);
+			assert_eq!(map.map(50 + j), 52 + j);
 		}
-		assert_eq!(map.get(98), 50);
-		assert_eq!(map.get(99), 51);
-		assert_eq!(map.get(100), 100);
+		assert_eq!(map.map(98), 50);
+		assert_eq!(map.map(99), 51);
+		assert_eq!(map.map(100), 100);
 	}
 
 	#[test]
@@ -274,9 +355,9 @@ mod tests {
 		assert_eq!(
 			Parameters::from_str(include_str!("test.txt")),
 			Ok(Parameters {
-				#[cfg(not(feature = "p2"))]
+				#[cfg(not(any(feature = "p2-brute", feature = "p2")))]
 				seeds: vec![79, 14, 55, 13],
-				#[cfg(feature = "p2")]
+				#[cfg(any(feature = "p2-brute", feature = "p2"))]
 				seeds: vec![79..(79 + 14), 55..(55 + 13)],
 				seed_soil: map![
 					50 98 2,
@@ -314,7 +395,7 @@ mod tests {
 		);
 	}
 
-	#[cfg(not(feature = "p2"))]
+	#[cfg(not(any(feature = "p2-brute", feature = "p2")))]
 	#[test]
 	fn parameters_seed_location() {
 		assert_eq!(
