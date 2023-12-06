@@ -372,4 +372,15 @@ mod tests {
 			Some(MAX_DRAW_5)
 		);
 	}
+
+	#[cfg(star)]
+	#[test]
+	fn p1() {
+		assert!(true);
+	}
+	#[cfg(star)]
+	#[test]
+	fn p2() {
+		assert!(true);
+	}
 }

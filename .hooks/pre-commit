@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+if [ ! "$(./generate_readme.sh)" = "$(cat README.md)" ]; then
+  echo "Please use the generate_readme.sh script to regenerate the README.md"
+  exit 1
+fi

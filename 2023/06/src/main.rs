@@ -101,4 +101,15 @@ mod tests {
 			Ok(Races(vec![(71530, 940200)]))
 		);
 	}
+
+	#[cfg(star)]
+	#[test]
+	fn p1() {
+		assert!(true);
+	}
+	#[cfg(star)]
+	#[test]
+	fn p2() {
+		assert!(true);
+	}
 }

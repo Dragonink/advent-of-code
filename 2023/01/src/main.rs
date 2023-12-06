@@ -72,4 +72,15 @@ mod tests {
 		assert_eq!(super::extract_calibration_value("zoneight234"), 14);
 		assert_eq!(super::extract_calibration_value("7pqrstsixteen"), 76);
 	}
+
+	#[cfg(star)]
+	#[test]
+	fn p1() {
+		assert!(true);
+	}
+	#[cfg(star)]
+	#[test]
+	fn p2() {
+		assert!(true);
+	}
 }
