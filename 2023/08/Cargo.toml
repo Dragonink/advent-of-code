@@ -1,0 +1,17 @@
+[package]
+name = "aoc-2023-08"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+publish = { workspace = true }
+
+[features]
+p2 = ["dep:num"]
+
+[dependencies.num]
+version = "^0.4.1"
+default-features = false
+optional = true
+
+[lints]
+workspace = true
