@@ -158,13 +158,15 @@ mod tests {
 			})
 		);
 	}
+}
 
-	#[cfg(star)]
+#[cfg(all(test, stars))]
+mod stars {
 	#[test]
 	fn p1() {
 		assert!(true);
 	}
-	#[cfg(star)]
+
 	#[test]
 	fn p2() {
 		assert!(true);

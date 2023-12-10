@@ -283,13 +283,15 @@ mod tests {
 		#[cfg(feature = "p2")]
 		assert!(Hand::from_str("JKKK2").unwrap() < Hand::from_str("QQQQ2").unwrap());
 	}
+}
 
-	#[cfg(star)]
+#[cfg(all(test, stars))]
+mod stars {
 	#[test]
 	fn p1() {
 		assert!(true);
 	}
-	#[cfg(star)]
+
 	#[test]
 	fn p2() {
 		assert!(true);

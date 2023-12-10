@@ -6,7 +6,7 @@ test_part() {
   t="$3"
   shift 3
 
-  RUSTFLAGS='--cfg star' cargo test --package "aoc-$year-$day" "$t" -- "$@" 2>/dev/null
+  RUSTFLAGS='--cfg stars' cargo test --package "aoc-$year-$day" "stars::$t" -- "$@" 2>/dev/null
 }
 
 readarray -t DAYS < <(seq --equal-width 1 25)
@@ -32,14 +32,14 @@ for day in "${DAYS[@]}"; do
   printf '|**%d**|' $(( 10#$day ))
   for year in "${YEARS[@]}"; do
     if [ -d "$year/$day" ]; then
-      if [ "$(test_part "$year" "$day" '' --list | grep -Po '^tests::p\d(?=:)' | wc --lines)" -ne 2 ]; then
+      if [ "$(test_part "$year" "$day" '' --list | grep -Po '^\d+(?= tests)')" -ne 2 ]; then
         printf '%s/%s is missing star tests' "$year" "$day" >&2
         exit 1
       fi
-      if test_part "$year" "$day" 'tests::p2' --exact >/dev/null; then
+      if test_part "$year" "$day" 'p2' --exact >/dev/null; then
         printf '[⭐⭐](https://adventofcode.com/%s/day/%d)|' "$year" $(( 10#$day ))
         continue
-      elif test_part "$year" "$day" 'tests::p1' --exact >/dev/null; then
+      elif test_part "$year" "$day" 'p1' --exact >/dev/null; then
         printf '[⭐](https://adventofcode.com/%s/day/%d)|' "$year" $(( 10#$day ))
         continue
       fi
