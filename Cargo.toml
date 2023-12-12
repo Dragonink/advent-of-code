@@ -11,6 +11,7 @@ edition = "2021"
 publish = false
 
 [workspace.dependencies]
+rayon = "^1.8.0"
 regex = "^1.10.2"
 
 [workspace.lints.rust]

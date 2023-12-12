@@ -1,17 +1,15 @@
 [package]
-name = "aoc-2023-05"
+name = "aoc-2023-12"
 version = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
 publish = { workspace = true }
 
 [features]
-p2-brute = ["dep:rayon"]
 p2 = []
 
-[dependencies.rayon]
-workspace = true
-optional = true
+[dependencies]
+rayon = { workspace = true }
 
 [lints]
 workspace = true
