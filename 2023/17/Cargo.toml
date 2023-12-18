@@ -9,7 +9,7 @@ publish = { workspace = true }
 p2 = []
 
 [dependencies]
-pathfinding = "^4.6.0"
+pathfinding = { workspace = true }
 
 [lints]
 workspace = true

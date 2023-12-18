@@ -1,7 +1,7 @@
-use rayon::prelude::*;
+use cached::proc_macro::cached;
 use std::str::FromStr;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum State {
 	Operational,
 	Damaged,
@@ -20,7 +20,7 @@ impl TryFrom<u8> for State {
 	}
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
 struct Row {
 	row: Vec<State>,
 	damaged_groups: Vec<usize>,
@@ -71,57 +71,56 @@ impl Row {
 			self.damaged_groups.extend_from_within(..len);
 		}
 	}
+}
 
-	fn is_arrangement_valid(&self, row: &[State]) -> bool {
-		let mut row = row.iter().peekable();
-		self.damaged_groups.iter().all(|&group| {
-			row.by_ref()
-				.skip_while(|state| **state == State::Operational)
-				.take_while(|state| **state == State::Damaged)
-				.count() == group
-		}) && row.all(|state| *state == State::Operational)
-	}
+#[cached]
+fn count_arrangements(row: Row) -> usize {
+	let Row {
+		row,
+		damaged_groups,
+	} = row;
+	if damaged_groups.is_empty() {
+		!row.contains(&State::Damaged) as _
+	} else if row.is_empty() {
+		damaged_groups.is_empty() as _
+	} else {
+		let mut ret = 0;
 
-	fn arrangements(&self) -> impl ParallelIterator<Item = Vec<State>> + '_ {
-		let unknowns = self
-			.row
-			.iter()
-			.enumerate()
-			.filter_map(|(i, state)| (*state == State::Unknown).then_some(i))
-			.collect::<Vec<_>>();
-		dbg!(unknowns.len());
-		assert!(unknowns.len() < 128);
-		(0..(1_u128 << unknowns.len()))
-			.into_par_iter()
-			.map(move |combi| {
-				let mut row = self.row.clone();
-				unknowns.iter().enumerate().for_each(|(k, &i)| {
-					row[i] = if combi & 1 << k != 0 {
-						State::Damaged
-					} else {
-						State::Operational
-					};
-				});
-				row
-			})
-			.filter(|row| self.is_arrangement_valid(row))
+		if row[0] != State::Damaged {
+			ret += count_arrangements(Row {
+				row: row[1..].to_vec(),
+				damaged_groups: damaged_groups.clone(),
+			});
+		}
+		if row[0] != State::Operational
+			&& (damaged_groups[0] <= row.len()
+				&& !row[..damaged_groups[0]].contains(&State::Operational)
+				&& (damaged_groups[0] == row.len() || row[damaged_groups[0]] != State::Damaged))
+		{
+			ret += count_arrangements(Row {
+				row: row
+					.get((damaged_groups[0] + 1)..)
+					.unwrap_or_default()
+					.to_vec(),
+				damaged_groups: damaged_groups[1..].to_vec(),
+			});
+		}
+
+		ret
 	}
 }
 
 fn main() {
 	#[cfg(not(feature = "p2"))]
 	fn map_lines(rows: impl Iterator<Item = Row>) -> impl Iterator<Item = usize> {
-		rows.map(|row| row.arrangements().count())
+		rows.map(count_arrangements)
 	}
 
 	#[cfg(feature = "p2")]
 	fn map_lines(rows: impl Iterator<Item = Row>) -> impl Iterator<Item = usize> {
-		rows.enumerate().map(|(r, mut row)| {
+		rows.map(|mut row| {
 			row.unfold();
-			let start = std::time::Instant::now();
-			let ret = row.arrangements().count();
-			eprintln!("{r}: {}s", start.elapsed().as_secs());
-			ret
+			count_arrangements(row)
 		})
 	}
 
@@ -270,135 +269,6 @@ mod tests {
 		);
 	}
 
-	#[test]
-	fn row_is_arrangement_valid() {
-		assert!(Row::from_str("?###???????? 3,2,1")
-			.unwrap()
-			.is_arrangement_valid(&[
-				State::Operational,
-				State::Damaged,
-				State::Damaged,
-				State::Damaged,
-				State::Operational,
-				State::Damaged,
-				State::Damaged,
-				State::Operational,
-				State::Damaged,
-				State::Operational,
-				State::Operational,
-				State::Operational,
-				State::Operational,
-			]));
-		assert!(Row::from_str("?###???????? 3,2,1")
-			.unwrap()
-			.is_arrangement_valid(&[
-				State::Operational,
-				State::Damaged,
-				State::Damaged,
-				State::Damaged,
-				State::Operational,
-				State::Damaged,
-				State::Damaged,
-				State::Operational,
-				State::Operational,
-				State::Operational,
-				State::Operational,
-				State::Operational,
-				State::Damaged,
-			]));
-		assert!(!Row::from_str("?###???????? 3,2,1")
-			.unwrap()
-			.is_arrangement_valid(&[
-				State::Operational,
-				State::Damaged,
-				State::Damaged,
-				State::Damaged,
-				State::Damaged,
-				State::Operational,
-				State::Damaged,
-				State::Operational,
-				State::Operational,
-				State::Damaged,
-				State::Operational,
-				State::Operational,
-				State::Operational,
-			]));
-	}
-
-	#[test]
-	fn row_arrangements() {
-		assert_eq!(
-			Row::from_str("???.### 1,1,3")
-				.unwrap()
-				.arrangements()
-				.count(),
-			1
-		);
-		assert_eq!(
-			Row::from_str(".??..??...?##. 1,1,3")
-				.unwrap()
-				.arrangements()
-				.count(),
-			4
-		);
-		assert_eq!(
-			Row::from_str("?#?#?#?#?#?#?#? 1,3,1,6")
-				.unwrap()
-				.arrangements()
-				.count(),
-			1
-		);
-		assert_eq!(
-			Row::from_str("????.#...#... 4,1,1")
-				.unwrap()
-				.arrangements()
-				.count(),
-			1
-		);
-		assert_eq!(
-			Row::from_str("????.######..#####. 1,6,5")
-				.unwrap()
-				.arrangements()
-				.count(),
-			4
-		);
-		assert_eq!(
-			Row::from_str("?###???????? 3,2,1")
-				.unwrap()
-				.arrangements()
-				.count(),
-			10
-		);
-	}
-
-	#[cfg(feature = "p2")]
-	#[test]
-	fn row_unfold_arrangements() {
-		let mut row = Row::from_str("???.### 1,1,3").unwrap();
-		row.unfold();
-		assert_eq!(row.arrangements().count(), 1);
-
-		row = Row::from_str(".??..??...?##. 1,1,3").unwrap();
-		row.unfold();
-		// assert_eq!(row.arrangements().count(), 16384);
-
-		row = Row::from_str("?#?#?#?#?#?#?#? 1,3,1,6").unwrap();
-		row.unfold();
-		// assert_eq!(row.arrangements().count(), 1);
-
-		row = Row::from_str("????.#...#... 4,1,1").unwrap();
-		row.unfold();
-		assert_eq!(row.arrangements().count(), 16);
-
-		row = Row::from_str("????.######..#####. 1,6,5").unwrap();
-		row.unfold();
-		assert_eq!(row.arrangements().count(), 2500);
-
-		row = Row::from_str("?###???????? 3,2,1").unwrap();
-		row.unfold();
-		// assert_eq!(row.arrangements().count(), 506250);
-	}
-
 	#[cfg(feature = "p2")]
 	#[test]
 	fn row_unfold() {
@@ -409,6 +279,62 @@ mod tests {
 			Row::from_str("???.###????.###????.###????.###????.### 1,1,3,1,1,3,1,1,3,1,1,3,1,1,3")
 				.unwrap()
 		);
+	}
+
+	#[test]
+	fn count_arrangements() {
+		assert_eq!(
+			super::count_arrangements(Row::from_str("???.### 1,1,3").unwrap()),
+			1
+		);
+		assert_eq!(
+			super::count_arrangements(Row::from_str(".??..??...?##. 1,1,3").unwrap()),
+			4
+		);
+		assert_eq!(
+			super::count_arrangements(Row::from_str("?#?#?#?#?#?#?#? 1,3,1,6").unwrap()),
+			1
+		);
+		assert_eq!(
+			super::count_arrangements(Row::from_str("????.#...#... 4,1,1").unwrap()),
+			1
+		);
+		assert_eq!(
+			super::count_arrangements(Row::from_str("????.######..#####. 1,6,5").unwrap()),
+			4
+		);
+		assert_eq!(
+			super::count_arrangements(Row::from_str("?###???????? 3,2,1").unwrap()),
+			10
+		);
+	}
+
+	#[cfg(feature = "p2")]
+	#[test]
+	fn row_unfold_count_arrangements() {
+		let mut row = Row::from_str("???.### 1,1,3").unwrap();
+		row.unfold();
+		assert_eq!(super::count_arrangements(row), 1);
+
+		row = Row::from_str(".??..??...?##. 1,1,3").unwrap();
+		row.unfold();
+		assert_eq!(super::count_arrangements(row), 16384);
+
+		row = Row::from_str("?#?#?#?#?#?#?#? 1,3,1,6").unwrap();
+		row.unfold();
+		assert_eq!(super::count_arrangements(row), 1);
+
+		row = Row::from_str("????.#...#... 4,1,1").unwrap();
+		row.unfold();
+		assert_eq!(super::count_arrangements(row), 16);
+
+		row = Row::from_str("????.######..#####. 1,6,5").unwrap();
+		row.unfold();
+		assert_eq!(super::count_arrangements(row), 2500);
+
+		row = Row::from_str("?###???????? 3,2,1").unwrap();
+		row.unfold();
+		assert_eq!(super::count_arrangements(row), 506250);
 	}
 }
 
@@ -421,6 +347,6 @@ mod stars {
 
 	#[test]
 	fn p2() {
-		assert!(false);
+		assert!(true);
 	}
 }

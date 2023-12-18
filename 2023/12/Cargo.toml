@@ -9,7 +9,7 @@ publish = { workspace = true }
 p2 = []
 
 [dependencies]
-rayon = { workspace = true }
+cached = { workspace = true }
 
 [lints]
 workspace = true
