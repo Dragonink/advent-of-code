@@ -18,7 +18,7 @@
 |**15**|[⭐⭐](https://adventofcode.com/2023/day/15)|
 |**16**|[⭐⭐](https://adventofcode.com/2023/day/16)|
 |**17**|[⭐⭐](https://adventofcode.com/2023/day/17)|
-|**18**|[⬛](https://adventofcode.com/2023/day/18)|
+|**18**|[⭐⭐](https://adventofcode.com/2023/day/18)|
 |**19**|[⬛](https://adventofcode.com/2023/day/19)|
 |**20**|[⬛](https://adventofcode.com/2023/day/20)|
 |**21**|[⬛](https://adventofcode.com/2023/day/21)|
