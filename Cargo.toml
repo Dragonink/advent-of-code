@@ -15,6 +15,9 @@ cached = "^0.46.1"
 pathfinding = "^4.6.0"
 rayon = "^1.8.0"
 regex = "^1.10.2"
+[workspace.dependencies.num]
+version = "^0.4.1"
+default-features = false
 
 [workspace.lints.rust]
 # Correctness
