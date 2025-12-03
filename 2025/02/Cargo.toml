@@ -9,6 +9,9 @@ publish.workspace = true
 [[bin]]
 name = "aoc-2025-02-silver"
 path = "src/bin/silver.rs"
+[[bin]]
+name = "aoc-2025-02-gold"
+path = "src/bin/gold.rs"
 
 
 [lints]
