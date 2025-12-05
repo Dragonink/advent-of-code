@@ -1,4 +1,4 @@
-//! Solution for the silver star of <https://adventofcode.com/2025/day/3>
+//! Solution for the gold star of <https://adventofcode.com/2025/day/3>
 
 #[allow(
 	clippy::allow_attributes,
@@ -27,7 +27,7 @@ fn find_max_joltage<I>(batteries: I) -> usize
 where
 	I: IntoIterator<Item = usize>,
 {
-	aoc_2025_03::find_max_joltage(2, batteries)
+	aoc_2025_03::find_max_joltage(12, batteries)
 }
 
 #[cfg(test)]
@@ -46,19 +46,19 @@ mod tests {
 	fn detailed_example() {
 		assert_eq!(
 			find_max_joltage(aoc_2025_03::parse_line("987654321111111")),
-			98
+			987_654_321_111
 		);
 		assert_eq!(
 			find_max_joltage(aoc_2025_03::parse_line("811111111111119")),
-			89
+			811_111_111_119
 		);
 		assert_eq!(
 			find_max_joltage(aoc_2025_03::parse_line("234234234234278")),
-			78
+			434_234_234_278
 		);
 		assert_eq!(
 			find_max_joltage(aoc_2025_03::parse_line("818181911112111")),
-			92
+			888_911_112_111
 		);
 	}
 
@@ -68,6 +68,6 @@ mod tests {
 			.lines()
 			.map(|line| find_max_joltage(aoc_2025_03::parse_line(line)))
 			.sum();
-		assert_eq!(ret, 357);
+		assert_eq!(ret, 3_121_910_778_619);
 	}
 }
